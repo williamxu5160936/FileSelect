@@ -1,0 +1,36 @@
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
+import numpy as np
+import cv2
+
+Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+print(filename)
+
+def click_event(event, x, y, flags, param):
+    if event == cv2.EVENT_LBUTTONDOWN:
+        font = cv2.FONT_HERSHEY_COMPLEX
+        strXY = str(x) + ', ' + str(y)
+        cv2.putText(imgColor,strXY, (x, y), font, 1, (0,0,255, 2))
+        cv2.imshow('image', imgColor)
+    if event == cv2.EVENT_RBUTTONDOWN:
+        value = img[y,x]
+        font = cv2.FONT_HERSHEY_COMPLEX
+        strXY = str(value)
+        cv2.putText(imgColor, strXY, (x, y), font, 1, (0, 255,2, 2))
+        cv2.imshow('image', imgColor)
+
+
+img = cv2.imread(filename, -1)
+
+
+img2 = cv2.imread(filename, 1)
+imgColor = cv2.line(img2, (0,0),(50,50), (0,0,255), 5)
+imgColor = cv2.circle(img2, (50,50), 50, (0,0,255), 0)
+
+print(img)
+cv2.imshow('image', imgColor)
+
+cv2.setMouseCallback('image', click_event)
+k = cv2.waitKey(0)
+print(k)
