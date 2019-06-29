@@ -1,36 +1,90 @@
-from tkinter import Tk
-from tkinter.filedialog import askopenfilename
-import numpy as np
+import matplotlib
+import math
 import cv2
 
-Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
-print(filename)
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
-def click_event(event, x, y, flags, param):
-    if event == cv2.EVENT_LBUTTONDOWN:
-        font = cv2.FONT_HERSHEY_COMPLEX
-        strXY = str(x) + ', ' + str(y)
-        cv2.putText(imgColor,strXY, (x, y), font, 1, (0,0,255, 2))
-        cv2.imshow('image', imgColor)
-    if event == cv2.EVENT_RBUTTONDOWN:
-        value = img[y,x]
-        font = cv2.FONT_HERSHEY_COMPLEX
-        strXY = str(value)
-        cv2.putText(imgColor, strXY, (x, y), font, 1, (0, 255,2, 2))
-        cv2.imshow('image', imgColor)
+import skimage
+from skimage import data, io, filters
+
+import tkinter as tk
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 
 
-img = cv2.imread(filename, -1)
+def callback(event):
+    radius = input("enter a radius: ")
+    go = True
+    while (go == True):
+        try:
+            inp = int(inp)
+            go = False
+        except:
+            print("please input a number")
+
+def fileselect_button():
+     Tk().withdraw()  # we don't want a full GUI, so keep the root window from appearing
+     filename = askopenfilename()  # show an "Open" dialog box and return the path to the selected file
+     print(filename)
+     image = cv2.imread(filename, -1)
+     cv2.imshow('image', image)
+
+class UIProject(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+        container = tk.Frame(self)
+
+        container.pack(side="top", fill="both", expand=True)
+
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+
+        self.frames = {}
+
+        for F in (StartPage, PageOne):
+            frame = F(container, self)
+            self.frames[F] = frame
+            frame.grid(row=0, column=0, sticky="nsew")
+            frame.bind("<Button-1>", callback)
+
+        self.show_frame(StartPage)
+
+    def show_frame(self, cont):
+        frame = self.frames[cont]
+        frame.tkraise()
 
 
-img2 = cv2.imread(filename, 1)
-imgColor = cv2.line(img2, (0,0),(50,50), (0,0,255), 5)
-imgColor = cv2.circle(img2, (50,50), 50, (0,0,255), 0)
+class StartPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="Start Page")
+        label.pack(pady=10, padx=10)
 
-print(img)
-cv2.imshow('image', imgColor)
+        button = tk.Button(self, text="Select File",
+                            command=fileselect_button)
+        button.pack()
 
-cv2.setMouseCallback('image', click_event)
-k = cv2.waitKey(0)
-print(k)
+
+class PageOne(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="Page One")
+        label.pack(pady=10, padx=10)
+
+        button1 = tk.Button(self, text="Back to Start Page",
+                            command=lambda: controller.show_frame(StartPage))
+        button1.pack()
+
+        f = Figure(figsize=(5, 5), dpi=100)
+        a = f.add_subplot(111)
+
+
+        canvas = FigureCanvasTkAgg(f, self)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+
+app = UIProject()
+app.mainloop()
