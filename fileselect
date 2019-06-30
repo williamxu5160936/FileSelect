@@ -1,7 +1,8 @@
 import matplotlib
+import numpy as np
 import math
 import cv2
-
+from matplotlib import pyplot as plt
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -9,6 +10,7 @@ from matplotlib.figure import Figure
 import skimage
 from skimage import data, io, filters
 
+from tkinter import *
 import tkinter as tk
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
@@ -23,13 +25,6 @@ def callback(event):
             go = False
         except:
             print("please input a number")
-
-def fileselect_button():
-     Tk().withdraw()  # we don't want a full GUI, so keep the root window from appearing
-     filename = askopenfilename()  # show an "Open" dialog box and return the path to the selected file
-     print(filename)
-     image = cv2.imread(filename, -1)
-     cv2.imshow('image', image)
 
 class UIProject(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -61,10 +56,83 @@ class StartPage(tk.Frame):
         tk.Frame.__init__(self, parent)
         label = tk.Label(self, text="Start Page")
         label.pack(pady=10, padx=10)
+        self.mode = 'Manual Mode'
 
-        button = tk.Button(self, text="Select File",
-                            command=fileselect_button)
-        button.pack()
+        select_button = tk.Button(self, text="Select File",
+                            command=self.fileselect_button)
+        select_button.pack()
+        self.manual_button = tk.Button(self, text = "Manual Mode", command=self.manual_mode)
+        self.manual_button.pack()
+        self.auto_button = tk.Button(self, text = "Auto Mode", command=self.auto_mode)
+        self.auto_button.pack()
+        self.setval_button = tk.Button(self, text = "press ok to set values", command=self.ok_pressed)
+        self.setval_button.pack()
+
+
+        self.radiusT = StringVar()
+        radius_label = tk.Label(self, text="Radius").pack(pady = 20)
+        radius_box = Entry(self, textvariable=self.radiusT, width=25, bg = "Lightgreen").place(x=180, y=200)
+        self.radiusT.set("0")
+        self.radius = int(self.radiusT.get())
+
+        self.xT = StringVar()
+        xCenter_label = tk.Label(self, text="X coordinate of pattern center:").pack(pady = 20)
+        xCenter_box = Entry(self, textvariable=self.xT, width=25, bg="Lightgreen").place(x=180, y=250)
+        self.xT.set("0")
+        self.x_center = int(self.xT.get())
+
+        self.yT = StringVar()
+        yCenter_label = tk.Label(self, text="Y coordinate of pattern center:").pack(pady =10)
+        yCenter_box = Entry(self, textvariable=self.yT, width=25, bg="Lightgreen").place(x=180, y=300)
+        self.yT.set("0")
+        self.y_center = int(self.yT.get())
+
+    def ok_pressed(self):
+        self.radius = int(self.radiusT.get())
+        self.x_center = int(self.xT.get())
+        self.y_center = int(self.yT.get())
+        print('radius: ' + str(self.radius) + 'Coordinates:  (' + str(self.x_center) + ', ' + str(self.y_center))
+    def manual_mode(self):
+        self.mode = 'Manual Mode'
+        print(self.mode)
+
+    def auto_mode(self):
+        self.mode = 'Auto Mode'
+        self.radius = int(self.radiusT.get())
+        print(self.radius)
+        print(self.mode)
+
+    def fileselect_button(self):
+        Tk().withdraw()  # we don't want a full GUI, so keep the root window from appearing
+        filename = askopenfilename()  # show an "Open" dialog box and return the path to the selected file
+        print(filename)
+        self.image = cv2.imread(filename, -1)
+        self.imgColor = cv2.imread(filename, 1)
+        # f = np.max(self.image)
+        # print(f)
+        # fscale = (2.0**16-1.0)/f
+        # print(fscale)
+        # print(fscale*self.image)
+        # #cv2.imshow('image', np.uint16(fscale * self.image))
+
+        plt.imshow(self.image, cmap='gray')
+        plt.show()
+        #cv2.setMouseCallback('image', self.click_event)
+
+    #have to change the mouse click function because we are now showing the image using plt
+    def click_event(self, event, x, y, flags, param):
+        if self.mode == 'Manual Mode':
+            if event == cv2.EVENT_LBUTTONDOWN:
+                font = cv2.FONT_HERSHEY_COMPLEX
+                strXY = str(x) + ', ' + str(y)
+                cv2.putText(self.imgColor, strXY, (x, y), font, 1, (0, 0, 255, 2))
+                cv2.imshow('image', self.imgColor)
+            if event == cv2.EVENT_RBUTTONDOWN:
+                value = self.image[y, x]
+                font = cv2.FONT_HERSHEY_COMPLEX
+                strXY = str(value)
+                cv2.putText(self.imgColor, strXY, (x, y), font, 1, (0, 255, 2, 2))
+                cv2.imshow('image', self.imgColor)
 
 
 class PageOne(tk.Frame):
