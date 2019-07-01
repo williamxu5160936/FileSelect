@@ -3,6 +3,8 @@ import numpy as np
 import math
 import cv2
 from matplotlib import pyplot as plt
+from matplotlib import patches
+from PIL import Image
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -14,7 +16,7 @@ from tkinter import *
 import tkinter as tk
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
-
+import time
 
 def callback(event):
     radius = input("enter a radius: ")
@@ -71,26 +73,26 @@ class StartPage(tk.Frame):
 
         self.radiusT = StringVar()
         radius_label = tk.Label(self, text="Radius").pack(pady = 20)
-        radius_box = Entry(self, textvariable=self.radiusT, width=25, bg = "Lightgreen").place(x=180, y=200)
+        self.radius_box = Entry(self, textvariable=self.radiusT, width=25, bg = "Lightgreen").place(x=180, y=200)
         self.radiusT.set("0")
         self.radius = int(self.radiusT.get())
 
         self.xT = StringVar()
         xCenter_label = tk.Label(self, text="X coordinate of pattern center:").pack(pady = 20)
-        xCenter_box = Entry(self, textvariable=self.xT, width=25, bg="Lightgreen").place(x=180, y=250)
+        self.xCenter_box = Entry(self, textvariable=self.xT, width=25, bg="Lightgreen").place(x=180, y=250)
         self.xT.set("0")
         self.x_center = int(self.xT.get())
 
         self.yT = StringVar()
         yCenter_label = tk.Label(self, text="Y coordinate of pattern center:").pack(pady =10)
-        yCenter_box = Entry(self, textvariable=self.yT, width=25, bg="Lightgreen").place(x=180, y=300)
+        self.yCenter_box = Entry(self, textvariable=self.yT, width=25, bg="Lightgreen").place(x=180, y=300)
         self.yT.set("0")
         self.y_center = int(self.yT.get())
 
     def ok_pressed(self):
-        self.radius = int(self.radiusT.get())
-        self.x_center = int(self.xT.get())
-        self.y_center = int(self.yT.get())
+        self.radius = self.radiusT.get()
+        self.x_center = self.xT.get()
+        self.y_center = self.yT.get()
         print('radius: ' + str(self.radius) + 'Coordinates:  (' + str(self.x_center) + ', ' + str(self.y_center))
     def manual_mode(self):
         self.mode = 'Manual Mode'
@@ -102,6 +104,36 @@ class StartPage(tk.Frame):
         print(self.radius)
         print(self.mode)
 
+
+
+
+    def onclick(self, event):
+        self.startTime = time.time()
+        print(self.startTime)
+
+    def onrelease(self, event):
+        if(time.time() - self.startTime < 0.75):
+            self.image_click_count += 1
+            global ix, iy
+            ix, iy = event.xdata, event.ydata
+            if self.image_click_count % 2 == 1:
+                self.x_center = ix
+                self.y_center = iy
+                self.xT.set(ix)
+                self.yT.set(iy)
+                self.x_center = self.xT.get()
+                self.y_center = self.yT.get()
+            if self.image_click_count % 2 == 0:
+                self.radius = math.sqrt((float(self.x_center) - ix) ** 2 + (float(self.y_center) - iy) ** 2)
+                self.radiusT.set(self.radius)
+                self.circle = patches.Circle((float(self.x_center), float(self.y_center)), float(self.radius),
+                                             linewidth=1,
+                                             edgecolor='r',
+                                             facecolor='none')
+
+
+            self.ax.add_patch(self.circle)
+            plt.show()
     def fileselect_button(self):
         Tk().withdraw()  # we don't want a full GUI, so keep the root window from appearing
         filename = askopenfilename()  # show an "Open" dialog box and return the path to the selected file
@@ -115,24 +147,20 @@ class StartPage(tk.Frame):
         # print(fscale*self.image)
         # #cv2.imshow('image', np.uint16(fscale * self.image))
 
-        plt.imshow(self.image, cmap='gray')
-        plt.show()
+        # plt.imshow(self.image, cmap='gray')
+        # plt.show()
         #cv2.setMouseCallback('image', self.click_event)
 
-    #have to change the mouse click function because we are now showing the image using plt
-    def click_event(self, event, x, y, flags, param):
-        if self.mode == 'Manual Mode':
-            if event == cv2.EVENT_LBUTTONDOWN:
-                font = cv2.FONT_HERSHEY_COMPLEX
-                strXY = str(x) + ', ' + str(y)
-                cv2.putText(self.imgColor, strXY, (x, y), font, 1, (0, 0, 255, 2))
-                cv2.imshow('image', self.imgColor)
-            if event == cv2.EVENT_RBUTTONDOWN:
-                value = self.image[y, x]
-                font = cv2.FONT_HERSHEY_COMPLEX
-                strXY = str(value)
-                cv2.putText(self.imgColor, strXY, (x, y), font, 1, (0, 255, 2, 2))
-                cv2.imshow('image', self.imgColor)
+        self.image_click_count = 0
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111)
+        self.ax.imshow(self.image, cmap='gray')
+        self.circle = patches.Circle((self.x_center, self.y_center), self.radius, linewidth=1, edgecolor='r',
+                                     facecolor='none')
+        self.ax.add_patch(self.circle)
+        self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        self.fig.canvas.mpl_connect('button_release_event', self.onrelease)
+        plt.show()
 
 
 class PageOne(tk.Frame):
