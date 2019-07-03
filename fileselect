@@ -18,15 +18,9 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 import time
 
-def callback(event):
-    radius = input("enter a radius: ")
-    go = True
-    while (go == True):
-        try:
-            inp = int(inp)
-            go = False
-        except:
-            print("please input a number")
+import scipy as sp
+import scipy.interpolate
+
 
 class UIProject(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -44,7 +38,6 @@ class UIProject(tk.Tk):
             frame = F(container, self)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
-            frame.bind("<Button-1>", callback)
 
         self.show_frame(StartPage)
 
@@ -70,6 +63,8 @@ class StartPage(tk.Frame):
         self.setval_button = tk.Button(self, text = "press ok to set values", command=self.ok_pressed)
         self.setval_button.pack()
 
+        self.pixelplot_button = tk.Button(self, text = "pixel plot", command=self.drawPlot)
+        self.pixelplot_button.pack()
 
         self.radiusT = StringVar()
         radius_label = tk.Label(self, text="Radius").pack(pady = 20)
@@ -91,8 +86,8 @@ class StartPage(tk.Frame):
 
     def ok_pressed(self):
         self.radius = self.radiusT.get()
-        self.x_center = self.xT.get()
-        self.y_center = self.yT.get()
+        self.x_center = float(self.xT.get())
+        self.y_center = float(self.yT.get())
         print('radius: ' + str(self.radius) + 'Coordinates:  (' + str(self.x_center) + ', ' + str(self.y_center))
     def manual_mode(self):
         self.mode = 'Manual Mode'
@@ -142,8 +137,8 @@ class StartPage(tk.Frame):
                     self.y_center = iy
                     self.xT.set(ix)
                     self.yT.set(iy)
-                    self.x_center = self.xT.get()
-                    self.y_center = self.yT.get()
+                    self.x_center = float(self.xT.get())
+                    self.y_center = float(self.yT.get())
                 if self.image_click_count % 2 == 0:
                     if self.prevCirc is not None:
                         self.prevCirc.set_visible(False)
@@ -179,6 +174,33 @@ class StartPage(tk.Frame):
         self.fig.canvas.mpl_connect('button_release_event', self.onrelease)
         plt.show()
 
+    def drawPlot(self):
+        z = self.image
+        
+        W = np.size(z, 1)
+        Y = np.size(z, 0)
+
+        x = np.arange(W)
+        y = np.arange(Y)
+        
+        xcenter = int(self.x_center)
+        ycenter = int(self.y_center)
+        r = int(self.radius)
+        
+        interp = sp.interpolate.interp2d(x, y, z, 'cubic')
+        vinterp = np.vectorize(interp)
+
+
+        plt.figure()
+        
+        arc = 2*np.pi*r
+        ang = np.linspace(0, 2*np.pi, arc*2, endpoint=False)
+        val = vinterp(xcenter + r*np.sin(ang),
+                      ycenter + r*np.cos(ang))
+        plt.plot(ang * 180 / np.pi, val, label='r={}'.format(r))
+
+        plt.show()
+        
 
 class PageOne(tk.Frame):
     def __init__(self, parent, controller):
