@@ -100,56 +100,73 @@ class StartPage(tk.Frame):
 
     def auto_mode(self):
         self.mode = 'Auto Mode'
-        self.radius = int(self.radiusT.get())
-        print(self.radius)
-        print(self.mode)
+        img = self.imgTemp
+        print(img)
+        img = cv2.medianBlur(img, 5)
+        cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
+        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10,
+                                   param1=60, param2=30, minRadius=0, maxRadius=100)
+
+        if circles is not None:
+            circles = np.uint16(np.around(circles))
+            for i in circles[0, :]:
+                # draw the outer circle
+                #cv2.circle(cimg, (i[0], i[1]), i[2], (0, 255, 0), 2)
+                circle = patches.Circle((float(i[0]), float(i[1])), float(i[2]),
+                                        linewidth=1,
+                                        edgecolor='y',
+                                        facecolor='none')
+
+                self.ax.add_patch(circle)
+                print(i[0])
+        plt.show()
+
 
 
 
 
     def onclick(self, event):
-        self.startTime = time.time()
-        print(self.startTime)
+        if self.mode == 'Manual Mode':
+            self.startTime = time.time()
+            print(self.startTime)
 
     def onrelease(self, event):
-        if(time.time() - self.startTime < 0.75):
-            self.image_click_count += 1
-            global ix, iy
-            ix, iy = event.xdata, event.ydata
-            if self.image_click_count % 2 == 1:
-                self.x_center = ix
-                self.y_center = iy
-                self.xT.set(ix)
-                self.yT.set(iy)
-                self.x_center = self.xT.get()
-                self.y_center = self.yT.get()
-            if self.image_click_count % 2 == 0:
-                self.radius = math.sqrt((float(self.x_center) - ix) ** 2 + (float(self.y_center) - iy) ** 2)
-                self.radiusT.set(self.radius)
-                self.circle = patches.Circle((float(self.x_center), float(self.y_center)), float(self.radius),
-                                             linewidth=1,
-                                             edgecolor='r',
-                                             facecolor='none')
+        if self.mode == 'Manual Mode':
+            if(time.time() - self.startTime < 0.5):
+                self.image_click_count += 1
+                global ix, iy
+                ix, iy = event.xdata, event.ydata
+                if self.image_click_count % 2 == 1:
+                    self.x_center = ix
+                    self.y_center = iy
+                    self.xT.set(ix)
+                    self.yT.set(iy)
+                    self.x_center = self.xT.get()
+                    self.y_center = self.yT.get()
+                if self.image_click_count % 2 == 0:
+                    if self.prevCirc is not None:
+                        self.prevCirc.set_visible(False)
+                    self.radius = math.sqrt((float(self.x_center) - ix) ** 2 + (float(self.y_center) - iy) ** 2)
+                    self.radiusT.set(self.radius)
+                    self.circle = patches.Circle((float(self.x_center), float(self.y_center)), float(self.radius),
+                                                 linewidth=1,
+                                                 edgecolor='r',
+                                                 facecolor='none')
+                    self.prevCirc = self.circle
 
-
-            self.ax.add_patch(self.circle)
-            plt.show()
+                self.ax.add_patch(self.circle)
+                plt.show()
     def fileselect_button(self):
         Tk().withdraw()  # we don't want a full GUI, so keep the root window from appearing
-        filename = askopenfilename()  # show an "Open" dialog box and return the path to the selected file
-        print(filename)
-        self.image = cv2.imread(filename, -1)
-        self.imgColor = cv2.imread(filename, 1)
-        # f = np.max(self.image)
-        # print(f)
-        # fscale = (2.0**16-1.0)/f
-        # print(fscale)
-        # print(fscale*self.image)
-        # #cv2.imshow('image', np.uint16(fscale * self.image))
+        self.filename = askopenfilename()  # show an "Open" dialog box and return the path to the selected file
+        print(self.filename)
+        self.image = cv2.imread(self.filename, -1)
+        self.prevCirc = None
 
-        # plt.imshow(self.image, cmap='gray')
-        # plt.show()
-        #cv2.setMouseCallback('image', self.click_event)
+        self.imgColor = cv2.imread(self.filename, 1)
+
+        self.imgTemp = cv2.imread(self.filename, 0)
 
         self.image_click_count = 0
         self.fig = plt.figure()
