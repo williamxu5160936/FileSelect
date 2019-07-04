@@ -5,6 +5,7 @@ import cv2
 from matplotlib import pyplot as plt
 from matplotlib import patches
 from PIL import Image
+
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -54,91 +55,109 @@ class StartPage(tk.Frame):
         self.mode = 'Manual Mode'
 
         select_button = tk.Button(self, text="Select File",
-                            command=self.fileselect_button)
+                                  command=self.fileselect_button)
         select_button.pack()
-        self.manual_button = tk.Button(self, text = "Manual Mode", command=self.manual_mode)
+        self.manual_button = tk.Button(self, text="Manual Mode", command=self.manual_mode)
         self.manual_button.pack()
-        self.auto_button = tk.Button(self, text = "Auto Mode", command=self.auto_mode)
+        self.auto_button = tk.Button(self, text="Auto Mode", command=self.auto_mode)
         self.auto_button.pack()
-        self.setval_button = tk.Button(self, text = "press ok to set values", command=self.ok_pressed)
+        self.setval_button = tk.Button(self, text="press ok to set values", command=self.ok_pressed)
         self.setval_button.pack()
 
-        self.pixelplot_button = tk.Button(self, text = "pixel plot", command=self.drawPlot)
+        self.pixelplot_button = tk.Button(self, text="pixel plot", command=self.drawPlot)
         self.pixelplot_button.pack()
 
         self.radiusT = StringVar()
-        radius_label = tk.Label(self, text="Radius").pack(pady = 20)
-        self.radius_box = Entry(self, textvariable=self.radiusT, width=25, bg = "Lightgreen").place(x=180, y=200)
+        radius_label = tk.Label(self, text="Radius").pack(pady=20)
+        self.radius_box = Entry(self, textvariable=self.radiusT, width=25, bg="Lightgreen").place(x=180, y=200)
         self.radiusT.set("0")
         self.radius = int(self.radiusT.get())
 
         self.xT = StringVar()
-        xCenter_label = tk.Label(self, text="X coordinate of pattern center:").pack(pady = 20)
+        xCenter_label = tk.Label(self, text="X coordinate of pattern center:").pack(pady=20)
         self.xCenter_box = Entry(self, textvariable=self.xT, width=25, bg="Lightgreen").place(x=180, y=250)
         self.xT.set("0")
         self.x_center = int(self.xT.get())
 
         self.yT = StringVar()
-        yCenter_label = tk.Label(self, text="Y coordinate of pattern center:").pack(pady =10)
+        yCenter_label = tk.Label(self, text="Y coordinate of pattern center:").pack(pady=10)
         self.yCenter_box = Entry(self, textvariable=self.yT, width=25, bg="Lightgreen").place(x=180, y=300)
         self.yT.set("0")
         self.y_center = int(self.yT.get())
 
+
     def ok_pressed(self):
-        self.radius = self.radiusT.get()
+        self.radius = float(self.radiusT.get())
         self.x_center = float(self.xT.get())
         self.y_center = float(self.yT.get())
-        print('radius: ' + str(self.radius) + 'Coordinates:  (' + str(self.x_center) + ', ' + str(self.y_center))
+        #print('radius: ' + str(self.radius) + 'Coordinates:  (' + str(self.x_center) + ', ' + str(self.y_center))
+        self.circle = patches.Circle((float(self.x_center), float(self.y_center)), float(self.radius),
+                                     linewidth=1,
+                                     edgecolor='r',
+                                     facecolor='none')
+        if self.prevCirc is not None:
+            self.prevCirc.set_visible(False)
+        self.prevCirc = self.circle
+        self.ax.add_patch(self.circle)
+        plt.show()
     def manual_mode(self):
         self.mode = 'Manual Mode'
         print(self.mode)
+        for c in self.patches:
+            c.set_visible(False)
+        plt.show()
 
     def auto_mode(self):
         self.mode = 'Auto Mode'
         img = self.imgTemp
-        print(img)
-        img = cv2.medianBlur(img, 5)
-        cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        g = (200.0 - 50.0) / (np.max(img) - np.min(img))
+        o = 50.0 - g * np.min(img)
+        imgA = (img * g + o).astype('uint8')
 
-        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10,
-                                   param1=60, param2=30, minRadius=0, maxRadius=100)
+        img = cv2.medianBlur(imgA, 5)
 
+        cimg = cv2.cvtColor(imgA, cv2.COLOR_GRAY2BGR)
+
+        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20,
+                                   param1=200, param2=30, minRadius=20, maxRadius=40)
+
+        self.auto_circles = []
+        self.patches = []
         if circles is not None:
             circles = np.uint16(np.around(circles))
             for i in circles[0, :]:
                 # draw the outer circle
-                #cv2.circle(cimg, (i[0], i[1]), i[2], (0, 255, 0), 2)
+                # cv2.circle(cimg, (i[0], i[1]), i[2], (0, 255, 0), 2)
                 circle = patches.Circle((float(i[0]), float(i[1])), float(i[2]),
                                         linewidth=1,
                                         edgecolor='y',
                                         facecolor='none')
-
+                self.auto_circles.append((float(i[0]), float(i[1]), float(i[2])))
+                self.patches.append(circle)
                 self.ax.add_patch(circle)
-                print(i[0])
+                # print(i[0])
         plt.show()
-
-
-
-
 
     def onclick(self, event):
         if self.mode == 'Manual Mode':
             self.startTime = time.time()
             print(self.startTime)
+        if self.mode == 'Auto Mode':
+            self.startTime = time.time()
 
     def onrelease(self, event):
+        global ix, iy
+        ix, iy = event.xdata, event.ydata
         if self.mode == 'Manual Mode':
-            if(time.time() - self.startTime < 0.5):
+            if (time.time() - self.startTime < 0.5):
                 self.image_click_count += 1
-                global ix, iy
-                ix, iy = event.xdata, event.ydata
                 if self.image_click_count % 2 == 1:
                     self.x_center = ix
                     self.y_center = iy
                     self.xT.set(ix)
                     self.yT.set(iy)
-                    self.x_center = float(self.xT.get())
-                    self.y_center = float(self.yT.get())
+                    self.x_center = self.xT.get()
+                    self.y_center = self.yT.get()
                 if self.image_click_count % 2 == 0:
                     if self.prevCirc is not None:
                         self.prevCirc.set_visible(False)
@@ -152,6 +171,32 @@ class StartPage(tk.Frame):
 
                 self.ax.add_patch(self.circle)
                 plt.show()
+        if self.mode == 'Auto Mode':
+            if (time.time() - self.startTime < 0.5):
+
+                minDist = 100000
+                for i in self.auto_circles:
+                    distT = math.sqrt((ix - i[0]) ** 2 + (iy - i[1]) ** 2)
+                    if distT < minDist:
+                        minDist = distT
+                        self.circle = patches.Circle((float(i[0]), float(i[1])), float(i[2]),
+                                                     linewidth=1,
+                                                     edgecolor='r',
+                                                     facecolor='none')
+                        self.x_center = i[0]
+                        self.y_center = i[1]
+                        self.radius = i[2]
+
+                if self.prevCirc is not None:
+                    self.prevCirc.set_visible(False)
+                self.xT.set(self.x_center)
+                self.yT.set(self.y_center)
+                self.radiusT.set(self.radius)
+                print('x center: ' + str(self.x_center))
+                self.prevCirc = self.circle
+                self.ax.add_patch(self.circle)
+                plt.show()
+
     def fileselect_button(self):
         Tk().withdraw()  # we don't want a full GUI, so keep the root window from appearing
         self.filename = askopenfilename()  # show an "Open" dialog box and return the path to the selected file
@@ -176,31 +221,30 @@ class StartPage(tk.Frame):
 
     def drawPlot(self):
         z = self.image
-        
+
         W = np.size(z, 1)
         Y = np.size(z, 0)
 
         x = np.arange(W)
         y = np.arange(Y)
-        
-        xcenter = int(self.x_center)
-        ycenter = int(self.y_center)
-        r = int(self.radius)
-        
+
+        xcenter = int(round(float(self.x_center), 0))
+        ycenter = int(round(float(self.y_center), 0))
+        r = int(round(float(self.radius), 0))
+
         interp = sp.interpolate.interp2d(x, y, z, 'cubic')
         vinterp = np.vectorize(interp)
 
-
         plt.figure()
-        
-        arc = 2*np.pi*r
-        ang = np.linspace(0, 2*np.pi, arc*2, endpoint=False)
-        val = vinterp(xcenter + r*np.sin(ang),
-                      ycenter + r*np.cos(ang))
+
+        arc = 2 * np.pi * r
+        ang = np.linspace(0, 2 * np.pi, arc * 2, endpoint=False)
+        val = vinterp(xcenter + r * np.sin(ang),
+                      ycenter + r * np.cos(ang))
         plt.plot(ang * 180 / np.pi, val, label='r={}'.format(r))
 
         plt.show()
-        
+
 
 class PageOne(tk.Frame):
     def __init__(self, parent, controller):
@@ -214,7 +258,6 @@ class PageOne(tk.Frame):
 
         f = Figure(figsize=(5, 5), dpi=100)
         a = f.add_subplot(111)
-
 
         canvas = FigureCanvasTkAgg(f, self)
         canvas.draw()
