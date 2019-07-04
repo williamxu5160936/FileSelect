@@ -203,6 +203,7 @@ class StartPage(tk.Frame):
         print(self.filename)
         self.image = cv2.imread(self.filename, -1)
         self.prevCirc = None
+        self.prevFig = None
 
         self.imgColor = cv2.imread(self.filename, 1)
 
@@ -235,7 +236,10 @@ class StartPage(tk.Frame):
         interp = sp.interpolate.interp2d(x, y, z, 'cubic')
         vinterp = np.vectorize(interp)
 
-        plt.figure()
+        if self.prevFig is not None:
+            plt.close(self.prevFig)
+
+        fig = plt.figure()
 
         arc = 2 * np.pi * r
         ang = np.linspace(0, 2 * np.pi, arc * 2, endpoint=False)
@@ -243,6 +247,8 @@ class StartPage(tk.Frame):
                       ycenter + r * np.cos(ang))
         plt.plot(ang * 180 / np.pi, val, label='r={}'.format(r))
 
+        self.prevFig = fig
+        
         plt.show()
 
 
