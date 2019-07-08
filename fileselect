@@ -252,7 +252,7 @@ class StartPage(tk.Frame):
         # Number of samplepoints
         N = 360
         # sample spacing
-        T = 1.0 / 360.0
+        T = 1.0
         z = self.image
 
         W = np.size(z, 1)
@@ -274,9 +274,10 @@ class StartPage(tk.Frame):
         y = vinterp(xcenter + r * np.sin(ang),
                       ycenter + r * np.cos(ang))
 
-        y = scipy.signal.detrend(y)
-        yf = scipy.fftpack.fft(y)
-        #yf = yf[1:]
+
+        #y = scipy.signal.detrend(y)
+        yf = scipy.fftpack.fft(y - np.mean(y))
+
         xf = np.linspace(0.0, 1.0 / (2.0 * T), N // 2)
 
         fig, ax = plt.subplots()
