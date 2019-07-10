@@ -21,6 +21,9 @@ import time
 
 import scipy as sp
 import scipy.interpolate
+from scipy import signal
+from scipy import integrate
+from scipy.integrate import quad
 
 
 class UIProject(tk.Tk):
@@ -276,6 +279,7 @@ class StartPage(tk.Frame):
 
         N=ang.size
         y = vinterp(xcenter + r * np.sin(ang),
+                    
                       ycenter + r * np.cos(ang))
 
 
@@ -284,9 +288,35 @@ class StartPage(tk.Frame):
 
         xf = np.linspace(0.0, 1.0 / (2.0 * T), N // 2)
         #xf = 1 / xf * 180.0 / np.pi
+        func = 2.0 / N * np.abs(yf[:N // 2])
+        
+        index, properties = signal.find_peaks(func, 
+                                              height=50, 
+                                              threshold=None, 
+                                              distance=None, 
+                                              prominence=None, 
+                                              width=0.1, 
+                                              wlen=None, 
+                                              rel_height=0.1, 
+                                              plateau_size=None)
+
+        
+        left=properties["left_ips"]
+        right=properties["right_ips"]
+        
+        print(left)
+        print(right)
+        
+        energy = np.trapz(func, dx=1)
+        print(energy)
+        
         fig, ax = plt.subplots()
-        ax.plot(xf, 2.0 / N * np.abs(yf[:N // 2]))
+        ax.plot(xf, func)
+        
+        ax.plot(xf[index[0]],func[index[0]], marker="o", ls = "", ms = 1)
         plt.show()
+    
+        
     def draw_deg_fft(self):
         # Number of samplepoints
         N = 720
@@ -318,9 +348,12 @@ class StartPage(tk.Frame):
         yf = scipy.fftpack.fft(y - np.mean(y))
 
         xf = np.linspace(0.0, 1.0 / (2.0 * T), N // 2)
+        
         xf = 1 / xf * 180.0 / np.pi
         fig, ax = plt.subplots()
+        
         ax.plot(xf, 2.0 / N * np.abs(yf[:N // 2]))
+        
         plt.show()
 
 class PageOne(tk.Frame):
@@ -343,3 +376,4 @@ class PageOne(tk.Frame):
 
 app = UIProject()
 app.mainloop()
+
