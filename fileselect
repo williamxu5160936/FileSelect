@@ -307,7 +307,8 @@ class StartPage(tk.Frame):
         print(left)
         print(right)
         
-        energy = np.trapz(func, dx=1)
+        energy = np.trapz(func, xf, dx=1)
+        #energy = integrate.quad(lambda x: func, left[0],right[0])
         print(energy)
         
         fig, ax = plt.subplots()
@@ -315,7 +316,6 @@ class StartPage(tk.Frame):
         
         ax.plot(xf[index[0]],func[index[0]], marker="o", ls = "", ms = 1)
         plt.show()
-    
         
     def draw_deg_fft(self):
         # Number of samplepoints
