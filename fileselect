@@ -67,24 +67,27 @@ class StartPage(tk.Frame):
         self.pixelplot_button = tk.Button(self, text="pixel plot", command=self.drawPlot)
         self.pixelplot_button.pack()
 
-        self.fft_button = tk.Button(self, text = "generate FFT plot", command=self.drawfft)
+        self.fft_button = tk.Button(self, text = "generate FFT plot(frq v amp)", command=self.drawfft)
         self.fft_button.pack()
 
+        self.fft_degrees_button = tk.Button(self, text = "FFT plot(amplitude at angle(deg)", command = self.draw_deg_fft)
+        self.fft_degrees_button.pack()
+
         self.radiusT = StringVar()
-        radius_label = tk.Label(self, text="Radius").pack(pady=20)
-        self.radius_box = Entry(self, textvariable=self.radiusT, width=25, bg="Lightgreen").place(x=180, y=200)
+        radius_label = tk.Label(self, text="Radius").pack(pady=30)
+        self.radius_box = Entry(self, textvariable=self.radiusT, width=25, bg="Lightgreen").place(x=180, y=272)
         self.radiusT.set("0")
         self.radius = int(self.radiusT.get())
 
         self.xT = StringVar()
-        xCenter_label = tk.Label(self, text="X coordinate of pattern center:").pack(pady=20)
-        self.xCenter_box = Entry(self, textvariable=self.xT, width=25, bg="Lightgreen").place(x=180, y=250)
+        xCenter_label = tk.Label(self, text="X coordinate of pattern center:").pack(pady=0)
+        self.xCenter_box = Entry(self, textvariable=self.xT, width=25, bg="Lightgreen").place(x=180, y=322)
         self.xT.set("0")
         self.x_center = int(self.xT.get())
 
         self.yT = StringVar()
-        yCenter_label = tk.Label(self, text="Y coordinate of pattern center:").pack(pady=10)
-        self.yCenter_box = Entry(self, textvariable=self.yT, width=25, bg="Lightgreen").place(x=180, y=300)
+        yCenter_label = tk.Label(self, text="Y coordinate of pattern center:").pack(pady=30)
+        self.yCenter_box = Entry(self, textvariable=self.yT, width=25, bg="Lightgreen").place(x=180, y=372)
         self.yT.set("0")
         self.y_center = int(self.yT.get())
 
@@ -250,9 +253,9 @@ class StartPage(tk.Frame):
 
     def drawfft(self):
         # Number of samplepoints
-        N = 360
-        # sample spacing
-        T = 1.0
+        N = 720
+        # sample spacing: 0.5 degree
+        T = np.pi/360
         z = self.image
 
         W = np.size(z, 1)
@@ -269,7 +272,8 @@ class StartPage(tk.Frame):
         vinterp = np.vectorize(interp)
 
         arc = 2 * np.pi * r
-        ang = np.linspace(0, int(round(2 * np.pi,0)), arc * 2, endpoint=False)
+        ang = np.linspace(0, N*T, N, endpoint=False)
+
         N=ang.size
         y = vinterp(xcenter + r * np.sin(ang),
                       ycenter + r * np.cos(ang))
@@ -279,11 +283,45 @@ class StartPage(tk.Frame):
         yf = scipy.fftpack.fft(y - np.mean(y))
 
         xf = np.linspace(0.0, 1.0 / (2.0 * T), N // 2)
-
+        #xf = 1 / xf * 180.0 / np.pi
         fig, ax = plt.subplots()
         ax.plot(xf, 2.0 / N * np.abs(yf[:N // 2]))
         plt.show()
+    def draw_deg_fft(self):
+        # Number of samplepoints
+        N = 720
+        # sample spacing: 0.5 degree
+        T = np.pi / 360
+        z = self.image
 
+        W = np.size(z, 1)
+        Y = np.size(z, 0)
+
+        xi = np.arange(W)
+        yi = np.arange(Y)
+
+        xcenter = int(round(float(self.x_center), 0))
+        ycenter = int(round(float(self.y_center), 0))
+        r = int(round(float(self.radius), 0))
+
+        interp = sp.interpolate.interp2d(xi, yi, z, 'cubic')
+        vinterp = np.vectorize(interp)
+
+        arc = 2 * np.pi * r
+        ang = np.linspace(0, N * T, N, endpoint=False)
+
+        N = ang.size
+        y = vinterp(xcenter + r * np.sin(ang),
+                    ycenter + r * np.cos(ang))
+
+        # y = scipy.signal.detrend(y)
+        yf = scipy.fftpack.fft(y - np.mean(y))
+
+        xf = np.linspace(0.0, 1.0 / (2.0 * T), N // 2)
+        xf = 1 / xf * 180.0 / np.pi
+        fig, ax = plt.subplots()
+        ax.plot(xf, 2.0 / N * np.abs(yf[:N // 2]))
+        plt.show()
 
 class PageOne(tk.Frame):
     def __init__(self, parent, controller):
