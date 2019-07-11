@@ -306,7 +306,7 @@ class StartPage(tk.Frame):
         height = properties["peak_heights"]
         time = 1/height[0]
         
-        energy = sum(np.power(func,2))*(time)
+        energy = sum(np.power(np.abs(func),2))*(right[0] - left[0])*time
         
         fig, ax = plt.subplots()
         ax.plot(xf, func)
