@@ -303,13 +303,10 @@ class StartPage(tk.Frame):
         
         left=properties["left_ips"]
         right=properties["right_ips"]
+        height = properties["peak_heights"]
+        time = 1/height[0]
         
-        print(left)
-        print(right)
-        
-        energy = np.trapz(func, xf, dx=1)
-        #energy = integrate.quad(lambda x: func, left[0],right[0])
-        print(energy)
+        energy = sum(np.power(func,2))*(time)
         
         fig, ax = plt.subplots()
         ax.plot(xf, func)
