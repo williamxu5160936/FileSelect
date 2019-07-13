@@ -279,8 +279,7 @@ class StartPage(tk.Frame):
 
         N=ang.size
         y = vinterp(xcenter + r * np.sin(ang),
-                    
-                      ycenter + r * np.cos(ang))
+                    ycenter + r * np.cos(ang))
 
 
         #y = scipy.signal.detrend(y)
@@ -291,27 +290,43 @@ class StartPage(tk.Frame):
         func = 2.0 / N * np.abs(yf[:N // 2])
         
         index, properties = signal.find_peaks(func, 
-                                              height=50, 
+                                              height=None, 
                                               threshold=None, 
                                               distance=None, 
-                                              prominence=None, 
-                                              width=0.1, 
+                                              prominence=10, 
+                                              width=None, 
                                               wlen=None, 
-                                              rel_height=0.1, 
+                                              rel_height=None, 
                                               plateau_size=None)
+        
+        maxs = signal.argrelmax(func)[0]
+        mins = signal.argrelmin(func)[0]
+        mins = np.insert(mins, 0, 0)
+        
+        min = []
 
-        
-        left=properties["left_ips"]
-        right=properties["right_ips"]
-        height = properties["peak_heights"]
-        time = 1/height[0]
-        
-        energy = sum(np.power(np.abs(func),2))*(right[0] - left[0])*time
+        for x in index:
+            i = 0
+            while i < len(maxs):
+                if x == maxs[i]:
+                    min.append(mins[i])
+                    min.append(mins[i + 1])
+                i += 1
+        ft = np.fft.fft(func)
+        i = 0
+        while i < len(index):
+            energy = sum(abs(ft[min[i * 2]:min[i * 2 + 1]]) ** 2)/len(func)
+            #energy = sum(abs(ft[min[i * 2]:min[i * 2 + 1]]) ** 2)
+            #energy = sum(abs(ft[min[i * 2]:min[i * 2 + 1]]) ** 2)/(min[i*2] - min[i*2+1])
+            #energy = sum(abs(ft[min[i * 2]:min[i * 2 + 1]]))
+            print(energy)
+            i += 1
         
         fig, ax = plt.subplots()
         ax.plot(xf, func)
         
-        ax.plot(xf[index[0]],func[index[0]], marker="o", ls = "", ms = 1)
+        ax.plot(xf[index],func[index], marker="o", ls = "", ms = 3)
+        ax.plot(xf[min],func[min], marker="o", ls = "", ms = 3)
         plt.show()
         
     def draw_deg_fft(self):
@@ -373,4 +388,3 @@ class PageOne(tk.Frame):
 
 app = UIProject()
 app.mainloop()
-
