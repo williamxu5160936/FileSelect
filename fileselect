@@ -312,13 +312,9 @@ class StartPage(tk.Frame):
                     min.append(mins[i])
                     min.append(mins[i + 1])
                 i += 1
-        ft = np.fft.fft(func)
         i = 0
         while i < len(index):
-            energy = sum(abs(ft[min[i * 2]:min[i * 2 + 1]]) ** 2)/len(func)
-            #energy = sum(abs(ft[min[i * 2]:min[i * 2 + 1]]) ** 2)
-            #energy = sum(abs(ft[min[i * 2]:min[i * 2 + 1]]) ** 2)/(min[i*2] - min[i*2+1])
-            #energy = sum(abs(ft[min[i * 2]:min[i * 2 + 1]]))
+            energy = math.sqrt(sum(abs(func[min[i * 2]:min[i * 2 + 1]]) ** 2))
             print(energy)
             i += 1
         
