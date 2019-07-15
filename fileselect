@@ -340,41 +340,30 @@ class StartPage(tk.Frame):
         # xf = 1 / xf * 180.0 / np.pi
         func = 2.0 / N * np.abs(yf[:N // 2])
 
-        index, properties = signal.find_peaks(func,
-                                              height=None,
-                                              threshold=None,
-                                              distance=None,
-                                              prominence=15,
-                                              width=None,
-                                              wlen=None,
-                                              rel_height=None,
-                                              plateau_size=None)
-
-        maxs = signal.argrelmax(func)[0]
-        mins = signal.argrelmin(func)[0]
-        mins = np.insert(mins, 0, 0)
-
-        min = []
-
-        for x in index:
-            i = 0
-            while i < len(maxs):
-                if x == maxs[i]:
-                    min.append(mins[i])
-                    min.append(mins[i + 1])
-                i += 1
+        indexes = peakutils.indexes(func)
+        peaks_x = peakutils.interpolate(xf, func, ind=indexes)
+        print(peaks_x)
+        
         i = 0
-        while i < len(index):
-            #energy = math.sqrt(sum(abs(func[min[i * 2]:min[i * 2 + 1]]) ** 2))
-            half_max = maxs[i]/2.0
+        while (i < len(peaks_x)):
+            half_max = func[peaks_x[i]]/2.0
             s = splrep(xf, func - half_max, k=3)
             roots = sproot(s)
             width = abs(roots[1] - roots[0])
-            #----------------------------------REPLACE THIS LINE OF CODE WITH INTERPOLATION BY DELTA = WIDTH/5-----------------
-            energy = math.sqrt(sum(abs(func[int(index[i] - width):int(index[i] + width)]) ** 2))
-            #print(energy)
-            en.append(energy)
+        
+            ys = []
+            start = peaks_x[i]  - width
 
+            a = 0
+            num = 5
+            while (a <= num * 2):
+                ys.append(np.interp(start, xf, func))
+                start += width / num
+                a += 1
+            energy = 0
+            for c in ys:
+                energy += c ** 2 * width/num
+            en.append(math.sqrt(energy))
             i += 1
         return en, xf[index]
 
