@@ -322,7 +322,7 @@ class StartPage(tk.Frame):
         s = splrep(xf, func - half_max, k=3)
         roots = sproot(s)
         width = abs(roots[1] - roots[0])
-        energy = integrate.quad(func, index[0] - width, index[0] + width)
+        energy = integrate.quad(func ** 2, index[0] - width, index[0] + width)
         
         fig, ax = plt.subplots()
         ax.plot(xf, func)
