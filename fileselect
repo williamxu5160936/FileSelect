@@ -318,6 +318,11 @@ class StartPage(tk.Frame):
             print(energy)
             i += 1
         
+        half_max = maxs[0]/2.0
+        s = splrep(xf, func - half_max, k=3)
+        roots = sproot(s)
+        width = abs(roots[1] - roots[0])
+        
         fig, ax = plt.subplots()
         ax.plot(xf, func)
         
