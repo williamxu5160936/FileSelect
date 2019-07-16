@@ -340,7 +340,15 @@ class StartPage(tk.Frame):
         # xf = 1 / xf * 180.0 / np.pi
         func = 2.0 / N * np.abs(yf[:N // 2])
 
-        index = peakutils.indexes(func)
+        index, properties = signal.find_peaks(func,
+                                              height=None,
+                                              threshold=None,
+                                              distance=None,
+                                              prominence=10,
+                                              width=None,
+                                              wlen=None,
+                                              rel_height=None,
+                                              plateau_size=None)
         peaks_x = peakutils.interpolate(xf, func, ind=index)
         print(peaks_x)
         
