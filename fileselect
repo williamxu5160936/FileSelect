@@ -28,6 +28,7 @@ from scipy import integrate
 from scipy.interpolate import splrep, sproot
 from scipy import optimize
 
+
 class UIProject(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
@@ -116,7 +117,7 @@ class StartPage(tk.Frame):
 
     def manual_mode(self):
         self.mode = 'Manual Mode'
-        #print(self.mode)
+        # print(self.mode)
         for c in self.patches:
             c.set_visible(False)
         plt.show()
@@ -155,7 +156,7 @@ class StartPage(tk.Frame):
     def onclick(self, event):
         if self.mode == 'Manual Mode':
             self.startTime = time.time()
-            #print(self.startTime)
+            # print(self.startTime)
         if self.mode == 'Auto Mode':
             self.startTime = time.time()
 
@@ -206,7 +207,7 @@ class StartPage(tk.Frame):
                 self.xT.set(self.x_center)
                 self.yT.set(self.y_center)
                 self.radiusT.set(self.radius)
-                #print('x center: ' + str(self.x_center))
+                # print('x center: ' + str(self.x_center))
                 self.prevCirc = self.circle
                 self.ax.add_patch(self.circle)
                 plt.show()
@@ -214,7 +215,7 @@ class StartPage(tk.Frame):
     def fileselect_button(self):
         Tk().withdraw()  # we don't want a full GUI, so keep the root window from appearing
         self.filename = askopenfilename()  # show an "Open" dialog box and return the path to the selected file
-        #print(self.filename)
+        # print(self.filename)
         self.image = cv2.imread(self.filename, -1)
         self.prevCirc = None
 
@@ -262,7 +263,7 @@ class StartPage(tk.Frame):
 
     def drawfft(self):
         xf, yf, N, func = self.get_fft()
-        
+
         index, properties = signal.find_peaks(func,
                                               height=None,
                                               threshold=None,
@@ -277,7 +278,7 @@ class StartPage(tk.Frame):
         mins = np.insert(mins, 0, 0)
 
         min = []
-        
+
         for x in index:
             i = 0
             while i < len(maxs):
@@ -285,11 +286,11 @@ class StartPage(tk.Frame):
                     min.append(mins[i])
                     min.append(mins[i + 1])
                 i += 1
-        #i = 0
-        #while i < len(index):
-            #energy = math.sqrt(sum(abs(func[min[i * 2]:min[i * 2 + 1]]) ** 2))
-            #print(energy)
-            #i += 1
+        # i = 0
+        # while i < len(index):
+        # energy = math.sqrt(sum(abs(func[min[i * 2]:min[i * 2 + 1]]) ** 2))
+        # print(energy)
+        # i += 1
 
         fig, ax = plt.subplots()
         ax.plot(xf, func)
@@ -302,18 +303,47 @@ class StartPage(tk.Frame):
         plt.xlabel('frequency(Hz)')
         plt.ylabel('amplitude')
         plt.show()
-        
+
     def find_energy(self, ri):
         en = []
-        #indexes of the energies
+        # indexes of the energies
         en_index = []
         # Number of samplepoints
-        
-        xf, yf, N, func = self.get_fft()
-        
-        #index = peakutils.indexes(func)
+
+        N = 720
+        # sample spacing: 0.5 degree
+        T = np.pi / 360
+        z = self.image
+
+        W = np.size(z, 1)
+        Y = np.size(z, 0)
+
+        xi = np.arange(W)
+        yi = np.arange(Y)
+
+        xcenter = int(round(float(self.x_center), 0))
+        ycenter = int(round(float(self.y_center), 0))
+        r = int(round(float(self.radius), 0))
+
+        interp = sp.interpolate.interp2d(xi, yi, z, 'cubic')
+        vinterp = np.vectorize(interp)
+
+        ang = np.linspace(0, N * T, N, endpoint=False)
+
+        N = ang.size
+        y = vinterp(xcenter + ri * np.sin(ang),
+                    ycenter + ri * np.cos(ang))
+
+        # y = scipy.signal.detrend(y)
+        yf = scipy.fftpack.fft(y - np.mean(y))
+
+        xf = np.linspace(0.0, 1.0 / (2.0 * T), N // 2)
+        # xf = 1 / xf * 180.0 / np.pi
+        func = 2.0 / N * np.abs(yf[:N // 2])
+
+        # index = peakutils.indexes(func)
         index, properties = signal.find_peaks(func,
-                                              height=50,
+                                              height=None,
                                               threshold=None,
                                               distance=None,
                                               prominence=10,
@@ -322,10 +352,11 @@ class StartPage(tk.Frame):
                                               rel_height=None,
                                               plateau_size=None)
         peaks_x = peakutils.interpolate(xf, func, ind=index)
-        
-        i = 0
-        while (i < len(peaks_x)):
-            half_max = np.interp(peaks_x[i], xf, func)/2.0
+        print(peaks_x)
+
+        i=0
+        while i < len(peaks_x):
+            half_max = np.interp(peaks_x[i], xf, func) / 2.0
             s = sp.interpolate.UnivariateSpline(xf, func - half_max)
             roots = s.roots()
             closeleft = 0
@@ -335,7 +366,7 @@ class StartPage(tk.Frame):
                 e += 1
             width = roots[e] - roots[e - 1]
             ys = []
-            start = peaks_x[i]  - width
+            start = peaks_x[i] - width
 
             a = 0
             num = 5
@@ -345,7 +376,7 @@ class StartPage(tk.Frame):
                 a += 1
             energy = 0
             for c in ys:
-                energy += c ** 2 * width/num
+                energy += c ** 2 * width / num
             print(math.sqrt(energy))
             en.append(math.sqrt(energy))
             i += 1
@@ -357,7 +388,6 @@ class StartPage(tk.Frame):
         en, ind = self.find_energy(r)
         p = self.max_pos(en)
         return ind[p], p
-
 
     def max_pos(self, list):
         max = 0
@@ -401,7 +431,7 @@ class StartPage(tk.Frame):
         xf = np.linspace(0.0, 1.0 / (2.0 * T), N // 2)
         func = 2.0 / N * np.abs(yf[:N // 2])
         return xf, yf, N, func
-    
+
     def draw_deg_fft(self):
         # Number of samplepoints
         xf, yf, N, func = self.get_fft()
@@ -414,12 +444,11 @@ class StartPage(tk.Frame):
         plt.ylabel('amplitude')
         plt.show()
 
-
     def compute_mtf(self):
         r = int(round(float(self.radius), 0))
         mtf_final = []
         yen = []
-        bounds = np.linspace(0, r, r*10)
+        bounds = np.linspace(0, r, r * 10)
         N = 1440
         # sample spacing: 0.5 degree
         T = np.pi / 720
@@ -447,7 +476,7 @@ class StartPage(tk.Frame):
         func = 2.0 / N * np.abs(mtf[:N // 2])
         max = np.amax(func)
         en_max, ind = self.find_energy(r)
-        #print(ind)
+        # print(ind)
 
         for ri in bounds:
             N = 1440
@@ -464,10 +493,8 @@ class StartPage(tk.Frame):
             xcenter = int(round(float(self.x_center), 0))
             ycenter = int(round(float(self.y_center), 0))
 
-
             interp = sp.interpolate.interp2d(xi, yi, z, 'cubic')
             vinterp = np.vectorize(interp)
-
 
             ang = np.linspace(0, N * T, N, endpoint=False)
 
@@ -476,38 +503,35 @@ class StartPage(tk.Frame):
 
                         ycenter + ri * np.cos(ang))
 
-
             mtf = np.absolute(scipy.fftpack.fft(y - np.mean(y)))
             func = 2.0 / N * np.abs(mtf[:N // 2])
-            mtf_final.append(np.amax(func)/max)
-            #print((np.max(y) - np.min(y)) / np.amax(mtf))
+            mtf_final.append(np.amax(func) / max)
+            # print((np.max(y) - np.min(y)) / np.amax(mtf))
 
-            #---------------------energy
+            # ---------------------energy
             n, positions = self.find_energy(ri)
-            #print('main peak')
+            # print('main peak')
             qf, main_index = self.find_main_peak()
-            #print(positions)
+            # print(positions)
             if len(n) > 0:
                 q = 0.0
                 for i in range(len(positions)):
-                    if(math.fabs(positions[i] - qf)) < 0.01:
+                    if (math.fabs(positions[i] - qf)) < 0.01:
                         q = n[i]
 
-                yen.append(q/np.sum(n))
+                yen.append(q / np.sum(n))
             else:
                 yen.append(0.0)
 
-
-        #mtf_final_smooth = mtf_final_smooth[1024:1151] / np.amax(mtf_final_smooth[1024:1151])
-        xr = np.linspace(0, r, r*10)
-
+        # mtf_final_smooth = mtf_final_smooth[1024:1151] / np.amax(mtf_final_smooth[1024:1151])
+        xr = np.linspace(0, r, r * 10)
 
         fig, ax = plt.subplots()
         # #plt.subplot(2, 1, 1)
-        ax.plot(xr, mtf_final)
-        plt.show()
+        # ax.plot(xr, mtf_final)
+        # plt.show()
 
-        #plt.subplot(2, 1, 2)
+        # plt.subplot(2, 1, 2)
 
         ax.plot(xr, yen)
         plt.xlabel('Radius')
@@ -516,8 +540,6 @@ class StartPage(tk.Frame):
 
         # ax.plot(xr, yen)
         # plt.show()
-
-
 
 
 class PageOne(tk.Frame):
@@ -540,4 +562,3 @@ class PageOne(tk.Frame):
 
 app = UIProject()
 app.mainloop()
-
