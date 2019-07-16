@@ -267,7 +267,7 @@ class StartPage(tk.Frame):
         index, properties = signal.find_peaks(func,
                                               height=None,
                                               threshold=None,
-                                              distance=None,
+                                              distance=5,
                                               prominence=10,
                                               width=None,
                                               wlen=None,
@@ -284,7 +284,10 @@ class StartPage(tk.Frame):
             while i < len(maxs):
                 if x == maxs[i]:
                     min.append(mins[i])
-                    min.append(mins[i + 1])
+                    if(i + 1 < len(mins)):
+                        min.append(mins[i + 1])
+                    else:
+                        min.append(0)
                 i += 1
         # i = 0
         # while i < len(index):
@@ -341,7 +344,7 @@ class StartPage(tk.Frame):
         # xf = 1 / xf * 180.0 / np.pi
         func = 2.0 / N * np.abs(yf[:N // 2])
 
-        # index = peakutils.indexes(func)
+        #index = peakutils.indexes(func)
         index, properties = signal.find_peaks(func,
                                               height=None,
                                               threshold=None,
@@ -351,8 +354,32 @@ class StartPage(tk.Frame):
                                               wlen=None,
                                               rel_height=None,
                                               plateau_size=None)
-        peaks_x = peakutils.interpolate(xf, func, ind=index)
-        print(peaks_x)
+        
+        maxs = signal.argrelmax(func)[0]
+        mins = signal.argrelmin(func)[0]
+        mins = np.insert(mins, 0, 0)
+
+        min = []
+
+        
+        for x in index:
+            i = 0
+            while i < len(maxs):
+                if x == maxs[i]:
+                    min.append(mins[i])
+                    if(i + 1 < len(mins)):
+                        min.append(mins[i + 1])
+                    else:
+                        min.append(0)
+                i += 1
+        
+        minx = min
+        s = 0 
+        while (s < len(minx)):
+            minx[s] = minx[s] * (2 * T) * 10
+            s += 1
+            
+        peaks_x = index * (2 * T) * 10
 
         i=0
         while i < len(peaks_x):
@@ -361,15 +388,16 @@ class StartPage(tk.Frame):
             roots = s.roots()
             closeleft = 0
             closeright = len(xf)
-            e = 0
-            while e < len(roots) and roots[e] < peaks_x[i]:
-                e += 1
-            if e == len(roots):
-                e = len(roots) - 1
-            width = abs(roots[e] - roots[e - 1])
-            if width > 0.5:
-                width = 0.5
-            print('width": '+ str(width))
+            for e in roots:
+                if ((e > closeleft) and (e < peaks_x[i])):
+                    closeleft = e
+                if ((e < closeright) and (e > peaks_x[i])):
+                    closeright = e    
+            if (closeleft < minx[i * 2]):
+                closeleft = minx[i * 2]
+            if (closeright > minx[i * 2 + 1]):
+                closeright = minx[i * 2 + 1]
+            width = closeright - closeleft
             ys = []
             start = peaks_x[i] - width
 
@@ -382,13 +410,11 @@ class StartPage(tk.Frame):
             energy = 0
             for c in ys:
                 energy += (c ** 2 * width / num)
-            if energy < 0:
-                print(energy)
-            print(math.sqrt(energy))
+            #print(math.sqrt(energy))
             en.append(math.sqrt(energy))
             i += 1
         print(en)
-        return en, xf[index]
+        return en, peaks_x
 
     def find_main_peak(self):
         r = int(round(float(self.radius), 0))
@@ -569,3 +595,4 @@ class PageOne(tk.Frame):
 
 app = UIProject()
 app.mainloop()
+
