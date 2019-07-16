@@ -345,7 +345,7 @@ class StartPage(tk.Frame):
         index, properties = signal.find_peaks(func,
                                               height=None,
                                               threshold=None,
-                                              distance=None,
+                                              distance=5,
                                               prominence=10,
                                               width=None,
                                               wlen=None,
@@ -362,27 +362,28 @@ class StartPage(tk.Frame):
             closeleft = 0
             closeright = len(xf)
             e = 0
-            while (roots[e] < peaks_x[i]):
+            while e < len(roots) and roots[e] < peaks_x[i]:
                 e += 1
-            width = roots[e] - roots[e - 1]
-            #for e in roots:
-                #if((e > closeleft) & (e < peaks_x[i]))
-                    #closeleft = e
-                #if((e < closeright) & (e > peaks_x[i]))
-                    #closeright = e 
-            #width = closeright - closeleft
+            if e == len(roots):
+                e = len(roots) - 1
+            width = abs(roots[e] - roots[e - 1])
+            if width > 0.5:
+                width = 0.5
+            print('width": '+ str(width))
             ys = []
             start = peaks_x[i] - width
 
             a = 0
-            num = 5
-            while (a <= num * 2):
+            num = 5.0
+            while a <= num * 2:
                 ys.append(np.interp(start, xf, func))
                 start += width / num
                 a += 1
             energy = 0
             for c in ys:
-                energy += c ** 2 * width / num
+                energy += (c ** 2 * width / num)
+            if energy < 0:
+                print(energy)
             print(math.sqrt(energy))
             en.append(math.sqrt(energy))
             i += 1
