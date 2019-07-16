@@ -365,6 +365,12 @@ class StartPage(tk.Frame):
             while (roots[e] < peaks_x[i]):
                 e += 1
             width = roots[e] - roots[e - 1]
+            #for e in roots:
+                #if((e > closeleft) & (e < peaks_x[i]))
+                    #closeleft = e
+                #if((e < closeright) & (e > peaks_x[i]))
+                    #closeright = e 
+            #width = closeright - closeleft
             ys = []
             start = peaks_x[i] - width
 
