@@ -302,7 +302,7 @@ class StartPage(tk.Frame):
         plt.xlabel('frequency(Hz)')
         plt.ylabel('amplitude')
         plt.show()
-
+        
     def find_energy(self, ri):
         en = []
         #indexes of the energies
@@ -313,7 +313,7 @@ class StartPage(tk.Frame):
         
         #index = peakutils.indexes(func)
         index, properties = signal.find_peaks(func,
-                                              height=None,
+                                              height=50,
                                               threshold=None,
                                               distance=None,
                                               prominence=10,
@@ -322,16 +322,18 @@ class StartPage(tk.Frame):
                                               rel_height=None,
                                               plateau_size=None)
         peaks_x = peakutils.interpolate(xf, func, ind=index)
-        print(peaks_x)
         
         i = 0
         while (i < len(peaks_x)):
-            #half_max = func[peaks_x[i]]/2.0
             half_max = np.interp(peaks_x[i], xf, func)/2.0
-            s = splrep(xf, func - half_max, k=3)
-            roots = sproot(s)
-            width = abs(roots[1] - roots[0])
-        
+            s = sp.interpolate.UnivariateSpline(xf, func - half_max)
+            roots = s.roots()
+            closeleft = 0
+            closeright = len(xf)
+            e = 0
+            while (roots[e] < peaks_x[i]):
+                e += 1
+            width = roots[e] - roots[e - 1]
             ys = []
             start = peaks_x[i]  - width
 
@@ -344,6 +346,7 @@ class StartPage(tk.Frame):
             energy = 0
             for c in ys:
                 energy += c ** 2 * width/num
+            print(math.sqrt(energy))
             en.append(math.sqrt(energy))
             i += 1
         print(en)
